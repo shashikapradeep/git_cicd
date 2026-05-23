@@ -1,0 +1,10 @@
+name: "GitHub Info"
+on: workflow_dispatch
+jobs:
+  github-info:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get GitHub Info
+        id: github_info
+        run: |
+          echo "${{ toJson(github) }}"
