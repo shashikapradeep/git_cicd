@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 type Todo = {
   id: number;
@@ -9,17 +9,52 @@ type Todo = {
   created_at: string;
 };
 
-export default function TodoApp({ initialTodos }: { initialTodos: Todo[] }) {
-  const [todos, setTodos] = useState(initialTodos);
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000";
+
+export default function TodoApp() {
+  const [todos, setTodos] = useState<Todo[]>([]);
   const [title, setTitle] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadTodos() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/todos`);
+        if (!response.ok) {
+          throw new Error("Could not load todos.");
+        }
+        const data = (await response.json()) as Todo[];
+        if (isActive) {
+          setTodos(data);
+        }
+      } catch (err) {
+        if (isActive) {
+          setError(err instanceof Error ? err.message : "Could not load todos.");
+        }
+      } finally {
+        if (isActive) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadTodos();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   async function onAddTodo(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmed = title.trim();
     if (!trimmed) return;
 
-    const response = await fetch("/api/todos", {
+    const response = await fetch(`${API_BASE_URL}/todos`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title: trimmed }),
@@ -37,7 +72,9 @@ export default function TodoApp({ initialTodos }: { initialTodos: Todo[] }) {
   }
 
   async function onToggleTodo(id: number) {
-    const response = await fetch(`/api/todos/${id}`, { method: "PATCH" });
+    const response = await fetch(`${API_BASE_URL}/todos/${id}`, {
+      method: "PATCH",
+    });
     if (!response.ok) {
       setError("Could not update todo.");
       return;
@@ -49,7 +86,9 @@ export default function TodoApp({ initialTodos }: { initialTodos: Todo[] }) {
   }
 
   async function onDeleteTodo(id: number) {
-    const response = await fetch(`/api/todos/${id}`, { method: "DELETE" });
+    const response = await fetch(`${API_BASE_URL}/todos/${id}`, {
+      method: "DELETE",
+    });
     if (!response.ok) {
       setError("Could not delete todo.");
       return;
@@ -83,7 +122,12 @@ export default function TodoApp({ initialTodos }: { initialTodos: Todo[] }) {
         {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
 
         <ul className="mt-6 space-y-2">
-          {todos.length === 0 && (
+          {loading && (
+            <li className="rounded-md border border-slate-200 p-4 text-center text-slate-500">
+              Loading todos...
+            </li>
+          )}
+          {!loading && todos.length === 0 && (
             <li className="rounded-md border border-dashed border-slate-300 p-4 text-center text-slate-500">
               No todos yet.
             </li>

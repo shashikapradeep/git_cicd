@@ -1,0 +1,11 @@
+{
+  "name": "todo-backend",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev": "node --watch server.mjs",
+    "start": "node server.mjs",
+    "lint": "node ../node_modules/eslint/bin/eslint.js server.mjs ../test/backend/**/*.spec.ts",
+    "test": "node --import tsx --test ../test/backend/**/*.spec.ts"
+  }
+}
